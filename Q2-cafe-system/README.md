@@ -4,7 +4,7 @@ FastBite lets students and staff order food from a university food court. The ba
 a set of six Node.js (Express) microservices. All services store their data in MongoDB,
 and every service has its **own database** on the same MongoDB server.
 
-This repository contains the working application code only.
+How to run, ship and repeat the deployment: see [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Services
 
@@ -22,23 +22,26 @@ start command `npm start`).
 
 ## Configuration (environment variables)
 
-Every service reads its settings from environment variables. If a variable is not set,
-the default shown below is used.
+Every service reads its settings from environment variables. Service addresses and the
+MongoDB connection string have **no defaults**: a service started without them prints
+`Missing required environment variable ...` and exits, so it can never fall back to
+`localhost` by accident. `docker-compose.yml` sets all of them, and the database
+password comes from a local `.env` file that is never committed (see `DEPLOYMENT.md`).
 
-| Service             | Variable                | Default                                    |
-|---------------------|-------------------------|--------------------------------------------|
-| all services        | `PORT`                  | the service's port from the table above    |
-| all except gateway  | `MONGO_URI`             | `mongodb://localhost:27017/<its database>` |
+| Service             | Variable                | Value under docker compose                     |
+|---------------------|-------------------------|------------------------------------------------|
+| all services        | `PORT`                  | the service's port from the table above (also the default) |
+| all except gateway  | `MONGO_URI`             | `mongodb://<user>:<password>@mongo:27017/<its database>?authSource=admin`, built from `.env` |
 | menu, inventory, customer | `SEED_DATA`       | demo data is inserted when the database is empty; set `false` to disable |
-| `api-gateway`       | `MENU_SERVICE_URL`      | `http://localhost:3001`                    |
-| `api-gateway`       | `ORDER_SERVICE_URL`     | `http://localhost:3002`                    |
-| `api-gateway`       | `INVENTORY_SERVICE_URL` | `http://localhost:3003`                    |
-| `api-gateway`       | `CUSTOMER_SERVICE_URL`  | `http://localhost:3004`                    |
-| `api-gateway`       | `PAYMENT_SERVICE_URL`   | `http://localhost:3005`                    |
-| `order-service`     | `MENU_SERVICE_URL`      | `http://localhost:3001`                    |
-| `order-service`     | `INVENTORY_SERVICE_URL` | `http://localhost:3003`                    |
-| `order-service`     | `CUSTOMER_SERVICE_URL`  | `http://localhost:3004`                    |
-| `payment-service`   | `ORDER_SERVICE_URL`     | `http://localhost:3002`                    |
+| `api-gateway`       | `MENU_SERVICE_URL`      | `http://menu-service:3001`                     |
+| `api-gateway`       | `ORDER_SERVICE_URL`     | `http://order-service:3002`                    |
+| `api-gateway`       | `INVENTORY_SERVICE_URL` | `http://inventory-service:3003`                |
+| `api-gateway`       | `CUSTOMER_SERVICE_URL`  | `http://customer-service:3004`                 |
+| `api-gateway`       | `PAYMENT_SERVICE_URL`   | `http://payment-service:3005`                  |
+| `order-service`     | `MENU_SERVICE_URL`      | `http://menu-service:3001`                     |
+| `order-service`     | `INVENTORY_SERVICE_URL` | `http://inventory-service:3003`                |
+| `order-service`     | `CUSTOMER_SERVICE_URL`  | `http://customer-service:3004`                 |
+| `payment-service`   | `ORDER_SERVICE_URL`     | `http://order-service:3002`                    |
 
 A service that cannot reach MongoDB at start-up prints an error and exits.
 

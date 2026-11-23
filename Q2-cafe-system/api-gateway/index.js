@@ -4,14 +4,25 @@
 const express = require('express');
 const proxy = require('express-http-proxy');
 
+// Settings come from the environment (docker compose / the deployment), never from
+// hard-coded addresses. A missing value stops the service with a clear message.
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing required environment variable ${name}`);
+    process.exit(1);
+  }
+  return value;
+}
+
 const PORT = process.env.PORT || 3000;
 
 // Addresses of the services behind the gateway.
-const MENU_SERVICE_URL = process.env.MENU_SERVICE_URL || 'http://localhost:3001';
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:3002';
-const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || 'http://localhost:3003';
-const CUSTOMER_SERVICE_URL = process.env.CUSTOMER_SERVICE_URL || 'http://localhost:3004';
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3005';
+const MENU_SERVICE_URL = requireEnv('MENU_SERVICE_URL');
+const ORDER_SERVICE_URL = requireEnv('ORDER_SERVICE_URL');
+const INVENTORY_SERVICE_URL = requireEnv('INVENTORY_SERVICE_URL');
+const CUSTOMER_SERVICE_URL = requireEnv('CUSTOMER_SERVICE_URL');
+const PAYMENT_SERVICE_URL = requireEnv('PAYMENT_SERVICE_URL');
 
 const app = express();
 

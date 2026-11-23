@@ -3,8 +3,19 @@
 const express = require('express');
 const mongoose = require('mongoose');
 
+// Settings come from the environment (docker compose / the deployment), never from
+// hard-coded addresses. A missing value stops the service with a clear message.
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing required environment variable ${name}`);
+    process.exit(1);
+  }
+  return value;
+}
+
 const PORT = process.env.PORT || 3001;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/fastbite_menu';
+const MONGO_URI = requireEnv('MONGO_URI');
 
 const app = express();
 app.use(express.json());

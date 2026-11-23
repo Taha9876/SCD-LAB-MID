@@ -6,9 +6,20 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const crypto = require('crypto');
 
+// Settings come from the environment (docker compose / the deployment), never from
+// hard-coded addresses. A missing value stops the service with a clear message.
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`Missing required environment variable ${name}`);
+    process.exit(1);
+  }
+  return value;
+}
+
 const PORT = process.env.PORT || 3005;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/fastbite_payments';
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://localhost:3002';
+const MONGO_URI = requireEnv('MONGO_URI');
+const ORDER_SERVICE_URL = requireEnv('ORDER_SERVICE_URL');
 
 const app = express();
 app.use(express.json());
