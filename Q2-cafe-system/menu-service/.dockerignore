@@ -1,0 +1,15 @@
+# Nothing below belongs in the image: dependencies are installed inside the
+# build, and secrets are passed in at run time, never baked into an image.
+node_modules
+npm-debug.log*
+*.log
+.env
+.env.*
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.md
+.vscode
+.idea
+coverage
