@@ -1,0 +1,105 @@
+# FastBite - the whole platform with one command, on any machine with Docker.
+#
+#   cp .env.example .env                 # then put a real password in .env
+#   docker compose up -d --build         # build from this checkout, or
+#   docker compose pull && docker compose up -d   # run the images GitHub published
+#
+# Only the API gateway is published to the host (the mobile app talks to it).
+# The other services and MongoDB are reachable only by their service names on
+# the private "fastbite" network - nothing finds anything through localhost.
+name: fastbite
+
+x-service: &service
+  restart: unless-stopped
+  init: true
+  networks: [fastbite]
+  depends_on:
+    mongo:
+      condition: service_healthy
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+    volumes:
+      - mongo-data:/data/db
+    networks: [fastbite]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  menu-service:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-menu-service:${TAG:-latest}
+    build: ./menu-service
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/fastbite_menu?authSource=admin
+
+  order-service:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-order-service:${TAG:-latest}
+    build: ./order-service
+    environment:
+      PORT: 3002
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/fastbite_orders?authSource=admin
+      MENU_SERVICE_URL: http://menu-service:3001
+      INVENTORY_SERVICE_URL: http://inventory-service:3003
+      CUSTOMER_SERVICE_URL: http://customer-service:3004
+
+  inventory-service:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-inventory-service:${TAG:-latest}
+    build: ./inventory-service
+    environment:
+      PORT: 3003
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/fastbite_inventory?authSource=admin
+
+  customer-service:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-customer-service:${TAG:-latest}
+    build: ./customer-service
+    environment:
+      PORT: 3004
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/fastbite_customers?authSource=admin
+
+  payment-service:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-payment-service:${TAG:-latest}
+    build: ./payment-service
+    environment:
+      PORT: 3005
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/fastbite_payments?authSource=admin
+      ORDER_SERVICE_URL: http://order-service:3002
+
+  api-gateway:
+    <<: *service
+    image: ${IMAGE_PREFIX:-ghcr.io/taha9876/fastbite}-api-gateway:${TAG:-latest}
+    build: ./api-gateway
+    ports:
+      - "${GATEWAY_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      MENU_SERVICE_URL: http://menu-service:3001
+      ORDER_SERVICE_URL: http://order-service:3002
+      INVENTORY_SERVICE_URL: http://inventory-service:3003
+      CUSTOMER_SERVICE_URL: http://customer-service:3004
+      PAYMENT_SERVICE_URL: http://payment-service:3005
+    depends_on:
+      menu-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      inventory-service: { condition: service_healthy }
+      customer-service: { condition: service_healthy }
+      payment-service: { condition: service_healthy }
+
+networks:
+  fastbite: {}
+
+volumes:
+  mongo-data: {}

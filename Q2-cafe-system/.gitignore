@@ -1,1 +1,23 @@
-node_modules
+# Dependencies are installed from package-lock.json, never committed
+node_modules/
+
+# Secrets and machine-specific configuration: only .env.example is committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and process-manager runtime files
+logs/
+*.log
+npm-debug.log*
+.pm2/
+*.pid
+
+# Editor and OS clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+coverage/
